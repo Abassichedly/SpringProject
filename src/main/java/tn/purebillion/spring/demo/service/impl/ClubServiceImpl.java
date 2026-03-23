@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import tn.purebillion.spring.demo.entity.Club;
+import tn.purebillion.spring.demo.enums.DomaineClub;
 import tn.purebillion.spring.demo.enums.StatutClub;
 import tn.purebillion.spring.demo.repository.ClubRepository;
 import tn.purebillion.spring.demo.service.interfaces.IClubService;
@@ -44,5 +45,45 @@ public class ClubServiceImpl implements IClubService {
     @Override
     public void removeClub(Long id) {
         clubRepository.deleteById(id);
+    }
+    @Override
+    public List<Club> findByNomContaining(String nom) {
+        return clubRepository.findByNomContaining(nom);
+    }
+
+    @Override
+    public List<Club> findByDomaine(DomaineClub domaine) {
+        return clubRepository.findByDomaine(domaine);
+    }
+
+    @Override
+    public List<Club> findByStatut(StatutClub statut) {
+        return clubRepository.findByStatut(statut);
+    }
+
+    @Override
+    public List<Club> findByDateCreationBetween(LocalDate start, LocalDate end) {
+        return clubRepository.findByDateCreationBetween(start, end);
+    }
+
+    @Override
+    public List<Club> searchClubs(String nom, DomaineClub domaine, StatutClub statut) {
+        return clubRepository.searchClubs(nom, domaine, statut);
+    }
+
+    @Override
+    public List<Club> searchAll(String nom, String sigle, String description, DomaineClub domaine,
+                                StatutClub statut, LocalDate dateStart, LocalDate dateEnd) {
+        return clubRepository.searchAll(nom, sigle, description, domaine, statut, dateStart, dateEnd);
+    }
+
+    @Override
+    public List<Club> findAllOrderByNomAsc() {
+        return clubRepository.findAllByOrderByNomAsc();
+    }
+
+    @Override
+    public List<Club> findAllOrderByDateCreationDesc() {
+        return clubRepository.findAllByOrderByDateCreationDesc();
     }
 }

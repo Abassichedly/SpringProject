@@ -28,11 +28,11 @@ public class Participation {
 
     @ManyToOne
     @JoinColumn(name = "membre_id")
-    Membre membre;
+    Membre membre;  // ← PAS de @JsonIgnore (on veut voir le membre dans la participation)
 
     @ManyToOne
     @JoinColumn(name = "activite_id")
-    Activite activite;
+    Activite activite;  // ← PAS de @JsonIgnore (on veut voir l'activité dans la participation)
 
     @ManyToOne
     @JoinColumn(name = "event_id")
