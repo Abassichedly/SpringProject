@@ -1,10 +1,9 @@
 package tn.purebillion.spring.demo.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import org.springframework.stereotype.Repository;
 import tn.purebillion.spring.demo.entity.Membre;
 import tn.purebillion.spring.demo.enums.RoleMembre;
 
@@ -13,17 +12,16 @@ import java.util.List;
 
 @Repository
 public interface MembreRepository extends JpaRepository<Membre, Long> {
-    // ========== RECHERCHE SIMPLE PAR ATTRIBUT ==========
+
     List<Membre> findByNomContaining(String nom);
     List<Membre> findByPrenomContaining(String prenom);
     List<Membre> findByEmailContaining(String email);
     List<Membre> findByRole(RoleMembre role);
     List<Membre> findByEstActif(Boolean estActif);
 
-    // CORRIGÉ : findByClubIdClub
-    List<Membre> findByClubIdClub(Long clubId);
+    @Query("SELECT m FROM Membre m WHERE m.club.idClub = :clubId")
+    List<Membre> findByClubIdClub(@Param("clubId") Long clubId);
 
-    // ========== RECHERCHE MULTI-CRITÈRES ==========
     @Query("SELECT m FROM Membre m WHERE " +
             "(:nom IS NULL OR m.nom LIKE %:nom%) AND " +
             "(:prenom IS NULL OR m.prenom LIKE %:prenom%) AND " +
@@ -32,7 +30,6 @@ public interface MembreRepository extends JpaRepository<Membre, Long> {
                                @Param("prenom") String prenom,
                                @Param("role") RoleMembre role);
 
-    // CORRIGÉ : Utilisation de club.idClub
     @Query("SELECT m FROM Membre m WHERE " +
             "(:nom IS NULL OR m.nom LIKE %:nom%) AND " +
             "(:prenom IS NULL OR m.prenom LIKE %:prenom%) AND " +
@@ -51,12 +48,9 @@ public interface MembreRepository extends JpaRepository<Membre, Long> {
                            @Param("dateStart") LocalDate dateStart,
                            @Param("dateEnd") LocalDate dateEnd);
 
-    // ========== TRI ==========
     List<Membre> findAllByOrderByNomAsc();
     List<Membre> findAllByOrderByDateAdhesionDesc();
 
-    // ========== RECHERCHE SPÉCIFIQUE ==========
-    // CORRIGÉ : Utilisation de club.idClub
     @Query("SELECT m FROM Membre m WHERE m.club.idClub = :clubId AND m.estActif = true")
     List<Membre> findByClubIdAndEstActifTrue(@Param("clubId") Long clubId);
 
@@ -66,4 +60,8 @@ public interface MembreRepository extends JpaRepository<Membre, Long> {
     @Query("SELECT m FROM Membre m WHERE (SELECT COUNT(p) FROM Participation p WHERE p.membre = m) >= :minParticipations")
     List<Membre> findMembresWithAtLeastNParticipations(@Param("minParticipations") int minParticipations);
 
+    @Query("SELECT DISTINCT m2 FROM Membre m1, Membre m2 " +
+            "WHERE m1.idMembre = :membreId AND m2.idMembre != :membreId " +
+            "AND m1.club = m2.club")
+    List<Membre> findConnectedMembres(@Param("membreId") Long membreId);
 }

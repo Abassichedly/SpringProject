@@ -46,4 +46,19 @@ public interface ClubRepository extends JpaRepository<Club, Long> {
     List<Club> findAllByOrderByNomAsc();
     List<Club> findAllByOrderByDateCreationDesc();
 
+    // AJOUTER CES MÉTHODES POUR LES PRÉDICTIONS
+    @Query("SELECT c, SIZE(c.membres), (SELECT COUNT(p) FROM Participation p WHERE p.activite.club = c) FROM Club c WHERE c.idClub = :clubId")
+    List<Object[]> predictClubGrowth(@Param("clubId") Long clubId);
+
+    @Query("SELECT c, (SELECT COUNT(m) FROM Membre m WHERE m.club = c AND m.estActif = true), (SELECT COUNT(m) FROM Membre m WHERE m.club = c) FROM Club c")
+    List<Object[]> findClubsByRetentionRate();
+
+    @Query("SELECT c FROM Club c WHERE (SELECT COUNT(p) FROM Participation p WHERE p.activite.club = c AND p.dateInscription > :date) < (SELECT COUNT(p) FROM Participation p WHERE p.activite.club = c AND p.dateInscription <= :date)")
+    List<Club> findClubsInDanger(@Param("date") LocalDate date);
+
+    @Query("SELECT c2 FROM Club c1, Club c2 WHERE c1.idClub = :clubId AND c2.idClub != :clubId AND c1.domaine = c2.domaine ORDER BY SIZE(c2.membres) DESC")
+    List<Club> findSimilarClubs(@Param("clubId") Long clubId);
+
+    @Query("SELECT c, COUNT(p) FROM Club c LEFT JOIN Participation p ON p.activite.club = c GROUP BY c ORDER BY COUNT(p) DESC")
+    List<Object[]> findClubsByPerformance();
 }

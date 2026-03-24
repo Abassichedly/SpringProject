@@ -13,6 +13,7 @@ import java.util.List;
 @Repository
 public interface ParticipationRepository extends JpaRepository<Participation, Long> {
 
+    // ========== RECHERCHES EXISTANTES ==========
     List<Participation> findByStatutPresence(StatutPresence statutPresence);
     List<Participation> findByMembreIdMembre(Long membreId);
     List<Participation> findByActiviteIdActivite(Long activiteId);
@@ -49,4 +50,16 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     @Query("SELECT COUNT(p) FROM Participation p WHERE p.event.idEvent = :eventId AND p.statutPresence = 'PRESENT'")
     long countPresencesByEventId(@Param("eventId") Long eventId);
+
+    // AJOUTER CES MÉTHODES POUR L'ANALYSE
+    @Query("SELECT p.membre, COUNT(p) FROM Participation p GROUP BY p.membre ORDER BY COUNT(p) DESC")
+    List<Object[]> findTopActiveMembres();
+
+    @Query("SELECT YEAR(p.dateInscription), MONTH(p.dateInscription), COUNT(p) FROM Participation p " +
+            "WHERE p.dateInscription BETWEEN :start AND :end " +
+            "GROUP BY YEAR(p.dateInscription), MONTH(p.dateInscription) ORDER BY 1, 2")
+    List<Object[]> findParticipationTrends(@Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    @Query("SELECT DAYOFWEEK(p.dateInscription), COUNT(p) FROM Participation p GROUP BY DAYOFWEEK(p.dateInscription)")
+    List<Object[]> getActivityHeatmap();
 }

@@ -49,4 +49,8 @@ public class Membre {
     @OneToMany(mappedBy = "membre", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     List<Participation> participations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "membre", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    List<MembreTag> tags = new ArrayList<>();
 }

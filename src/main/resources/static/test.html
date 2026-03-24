@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Manager - API Avancées</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2 span {
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin: 10px 0;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .result {
+            background: #1e1e2f;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 15px;
+            max-height: 350px;
+            overflow: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #10b981;
+            border: 1px solid #2d2d44;
+        }
+
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            margin: 2px;
+        }
+
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-url {
+            font-size: 10px;
+            color: #888;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+            font-family: monospace;
+        }
+
+        .status-badge {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-online { background: #10b981; }
+        .status-offline { background: #ef4444; }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background: #2d2d44;
+            color: #fff;
+        }
+
+        .score-bar {
+            height: 6px;
+            background: #10b981;
+            border-radius: 3px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🚀 Club Manager - API Avancées</h1>
+    <div class="subtitle">
+        <span class="status-badge status-online"></span> API Server: http://localhost:8081/api
+    </div>
+
+    <div class="grid">
+
+        <!-- 1. Réseau Social -->
+        <div class="card">
+            <h2><span>🌐</span> Réseau Social Intelligent</h2>
+            <div class="input-group">
+                <label>ID Membre</label>
+                <input type="number" id="socialMembreId" placeholder="Entrez l'ID du membre" value="1">
+            </div>
+            <div class="btn-group">
+                <button onclick="testAPI('/social/recommendations/' + getSocialId(), 'socialResult')">🤝 Recommandations</button>
+                <button onclick="testAPI('/social/influence/' + getSocialId(), 'socialResult')">⭐ Score d'influence</button>
+                <button onclick="testAPI('/social/communities', 'socialResult')">👥 Communautés</button>
+                <button onclick="testAPI('/social/interests/ROBOTIQUE', 'socialResult')">🏷️ Par intérêt</button>
+            </div>
+            <div id="socialResult" class="result">
+                <pre>Cliquez sur un bouton pour tester l'API...</pre>
+            </div>
+            <div class="api-url">GET /social/recommendations/{id} | /social/influence/{id} | /social/communities | /social/interests/{tag}</div>
+        </div>
+
+        <!-- 2. Prédictions IA -->
+        <div class="card">
+            <h2><span>🤖</span> Prédictions IA</h2>
+            <div class="input-group">
+                <label>ID Club (pour prédictions)</label>
+                <input type="number" id="predictClubId" placeholder="ID Club" value="1">
+            </div>
+            <div class="btn-group">
+                <button onclick="testAPI('/predict/club/' + getPredictClubId(), 'predictResult')">📈 Évolution club</button>
+                <button onclick="testAPI('/predict/churn/1', 'predictResult')">⚠️ Risque départ</button>
+                <button onclick="testAPI('/predict/trends', 'predictResult')">📊 Tendances</button>
+                <button onclick="testAPI('/predict/ranking', 'predictResult')">🏆 Classement clubs</button>
+                <button onclick="testAPI('/predict/history/' + getPredictClubId(), 'predictResult')">📜 Historique</button>
+            </div>
+            <div id="predictResult" class="result">
+                <pre>Cliquez sur un bouton pour tester l'API...</pre>
+            </div>
+            <div class="api-url">GET /predict/club/{id} | /predict/churn/{id} | /predict/trends | /predict/ranking | /predict/history/{id}</div>
+        </div>
+
+        <!-- 3. Gamification -->
+        <div class="card">
+            <h2><span>🎮</span> Gamification Avancée</h2>
+            <div class="input-group">
+                <label>ID Membre (pour parcours personnalisé)</label>
+                <input type="number" id="gamificationMembreId" placeholder="ID Membre" value="1">
+            </div>
+            <div class="btn-group">
+                <button onclick="testAPI('/gamification/leaderboard', 'gamificationResult')">🏆 Classement</button>
+                <button onclick="testAPI('/gamification/journey/' + getGamificationId(), 'gamificationResult')">🎯 Parcours</button>
+                <button onclick="testAPI('/gamification/stats/' + getGamificationId(), 'gamificationResult')">📊 Statistiques</button>
+            </div>
+            <div id="gamificationResult" class="result">
+                <pre>Cliquez sur un bouton pour tester l'API...</pre>
+            </div>
+            <div class="api-url">GET /gamification/leaderboard | /gamification/journey/{id} | /gamification/stats/{id}</div>
+        </div>
+
+        <!-- 4. Insights Analytics -->
+        <div class="card">
+            <h2><span>📊</span> Insights Analytics</h2>
+            <div class="input-group">
+                <label>ID Club (pour rapport santé)</label>
+                <input type="number" id="healthClubId" placeholder="ID Club" value="1">
+            </div>
+            <div class="btn-group">
+                <button onclick="testAPI('/insights/heatmap', 'insightResult')">🔥 Heatmap</button>
+                <button onclick="testAPI('/insights/club/' + getHealthClubId() + '/health', 'insightResult')">💚 Santé club</button>
+                <button onclick="testAPI('/insights/compare', 'insightResult')">📊 Comparaison</button>
+                <button onclick="testAPI('/insights/interests/top', 'insightResult')">🏷️ Top intérêts</button>
+            </div>
+            <div id="insightResult" class="result">
+                <pre>Cliquez sur un bouton pour tester l'API...</pre>
+            </div>
+            <div class="api-url">GET /insights/heatmap | /insights/club/{id}/health | /insights/compare | /insights/interests/top</div>
+        </div>
+
+    </div>
+
+    <div class="grid" style="margin-top: 20px;">
+
+        <!-- 5. API de Base -->
+        <div class="card">
+            <h2><span>📋</span> API de Base (CRUD)</h2>
+            <div class="input-group">
+                <label>Sélectionner une API</label>
+                <select id="baseApiSelect">
+                    <option value="/club/listClub">📋 Liste des clubs</option>
+                    <option value="/membre/listMembre">👥 Liste des membres</option>
+                    <option value="/activite/listActivite">🎪 Liste des activités</option>
+                    <option value="/event/listEvent">🎉 Liste des événements</option>
+                    <option value="/participation/listParticipation">✅ Liste des participations</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button onclick="testAPI(document.getElementById('baseApiSelect').value, 'baseResult')">🔍 Exécuter</button>
+            </div>
+            <div id="baseResult" class="result">
+                <pre>Cliquez pour tester...</pre>
+            </div>
+            <div class="api-url">GET /club/listClub | /membre/listMembre | /activite/listActivite | /event/listEvent | /participation/listParticipation</div>
+        </div>
+
+        <!-- 6. Dashboard Complet -->
+        <div class="card">
+            <h2><span>📈</span> Dashboard Dynamique</h2>
+            <div class="btn-group">
+                <button onclick="loadDashboard()">🚀 Charger Dashboard</button>
+                <button onclick="clearDashboard()">🗑️ Effacer</button>
+            </div>
+            <div id="dashboardResult" class="result">
+                <pre>Cliquez sur "Charger Dashboard" pour voir toutes les statistiques...</pre>
+            </div>
+            <div class="api-url">Dashboard regroupant heatmap, tendances et classement</div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <p>🔗 API Base: http://localhost:8081/api | ⚡ Toutes les API sont accessibles via GET sauf /social/interaction (POST)</p>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8081/api';
+
+    function getSocialId() {
+        return document.getElementById('socialMembreId').value || '1';
+    }
+
+    function getPredictClubId() {
+        return document.getElementById('predictClubId').value || '1';
+    }
+
+    function getGamificationId() {
+        return document.getElementById('gamificationMembreId').value || '1';
+    }
+
+    function getHealthClubId() {
+        return document.getElementById('healthClubId').value || '1';
+    }
+
+    async function testAPI(endpoint, resultElementId) {
+        const resultDiv = document.getElementById(resultElementId);
+        resultDiv.innerHTML = '<div class="loading"></div> <span style="color:#888;">Chargement...</span>';
+
+        try {
+            const response = await fetch(API_BASE + endpoint);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            // Formater joliment
+            let formattedData = JSON.stringify(data, null, 2);
+
+            // Si c'est un leaderboard, afficher en tableau
+            if (endpoint.includes('leaderboard') && Array.isArray(data)) {
+                formattedData = formatLeaderboardHTML(data);
+            }
+            // Si c'est une heatmap, afficher graphiquement
+            else if (endpoint.includes('heatmap') && data.heatmap) {
+                formattedData = formatHeatmapHTML(data);
+            }
+            // Si c'est un rapport santé
+            else if (endpoint.includes('health') && data.healthStatus) {
+                formattedData = formatHealthReportHTML(data);
+            }
+            else {
+                formattedData = `<pre>${formattedData}</pre>`;
+            }
+
+            resultDiv.innerHTML = formattedData;
+        } catch (error) {
+            resultDiv.innerHTML = `<div style="color: #ef4444;">❌ Erreur: ${error.message}</div>
+                                       <div style="color: #888; margin-top: 8px;">Vérifiez que l'application Spring Boot est lancée sur le port 8081</div>`;
+        }
+    }
+
+    function formatLeaderboardHTML(data) {
+        if (!Array.isArray(data) || data.length === 0) return '<pre>Aucune donnée</pre>';
+
+        let html = '<table style="width:100%;">';
+        html += '<tr style="background: #667eea; color: white;"><th>🏆 Rang</th><th>👤 Membre</th><th>⚡ XP</th><th>📊 Niveau</th><th>🏅 Badges</th><th>🎯 Titre</th></tr>';
+
+        data.forEach((item, index) => {
+            let badgesHtml = '';
+            if (item.badges && Array.isArray(item.badges)) {
+                badgesHtml = item.badges.map(b => `<span class="badge badge-info">${b}</span>`).join(' ');
+            }
+            const rankColor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'inherit';
+            html += `<tr style="border-bottom: 1px solid #333;">
+                            <td style="padding: 6px; color: ${rankColor}; font-weight: bold;">${index + 1}${index === 0 ? ' 👑' : ''}</td>
+                            <td style="padding: 6px;">${item.membre || 'N/A'}</td>
+                            <td style="padding: 6px;"><strong>${item.xp || 0}</strong></td>
+                            <td style="padding: 6px;">${item.level || 1}</td>
+                            <td style="padding: 6px;">${badgesHtml}</td>
+                            <td style="padding: 6px;">${item.title || '-'}</td>
+                           </tr>`;
+        });
+        html += '</table>';
+        return html;
+    }
+
+    function formatHeatmapHTML(data) {
+        if (!data.heatmap) return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+        let html = '<div><strong>🔥 Heatmap d\'activité</strong></div>';
+        html += '<div style="margin-top: 10px;">';
+
+        const days = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI', 'DIMANCHE'];
+        const maxValue = Math.max(...Object.values(data.heatmap));
+
+        for (const day of days) {
+            const count = data.heatmap[day] || 0;
+            const percentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
+            html += `<div style="margin: 5px 0;">
+                            <span style="display: inline-block; width: 90px;">${day}</span>
+                            <span style="display: inline-block; width: 50px;">${count} 🎯</span>
+                            <div style="display: inline-block; width: 150px; background: #333; border-radius: 5px; overflow: hidden;">
+                                <div style="width: ${percentage}%; height: 20px; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 5px;"></div>
+                            </div>
+                         </div>`;
+        }
+
+        html += `<div style="margin-top: 12px; padding: 8px; background: #2d2d44; border-radius: 8px;">
+                        <strong>📅 Meilleur jour:</strong> ${data.bestDay} (${data.peakActivity} activités)
+                     </div>`;
+        html += '</div>';
+        return html;
+    }
+
+    function formatHealthReportHTML(data) {
+        let html = '<div>';
+        html += `<div style="font-size: 18px; margin-bottom: 10px;">${data.icon || '🏥'} <strong>${data.club}</strong></div>`;
+        html += `<div style="margin: 8px 0;"><span class="badge ${data.healthStatus === 'EXCELLENTE' ? 'badge-success' : data.healthStatus === 'BONNE' ? 'badge-info' : 'badge-warning'}">${data.healthStatus}</span></div>`;
+        html += `<div style="margin: 10px 0;"><strong>📊 Statistiques:</strong></div>`;
+        html += `<table style="width:100%;"><tr><td>👥 Membres</td><td><strong>${data.membres}</strong></td></tr>`;
+        html += `<tr><td>🎪 Activités</td><td><strong>${data.activites}</strong></td></tr>`;
+        html += `<tr><td>🎉 Événements</td><td><strong>${data.events}</strong></td></tr>`;
+        html += `<tr><td>📈 Taux d'engagement</td><td><strong>${data.engagementRate}</strong></td></tr></table>`;
+
+        if (data.recommendations && data.recommendations.length > 0) {
+            html += `<div style="margin-top: 12px;"><strong>💡 Recommandations:</strong><ul>`;
+            data.recommendations.forEach(rec => {
+                html += `<li>✨ ${rec}</li>`;
+            });
+            html += `</ul></div>`;
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    async function loadDashboard() {
+        const dashboardDiv = document.getElementById('dashboardResult');
+        dashboardDiv.innerHTML = '<div class="loading"></div> <span style="color:#888;">Chargement du dashboard...</span>';
+
+        try {
+            const endpoints = [
+                { name: '🔥 Heatmap', url: '/insights/heatmap' },
+                { name: '📊 Tendances', url: '/predict/trends' },
+                { name: '🏆 Classement', url: '/gamification/leaderboard' },
+                { name: '📋 Clubs', url: '/club/listClub' }
+            ];
+
+            let html = '<div style="max-height: 600px; overflow: auto;">';
+
+            for (const ep of endpoints) {
+                const response = await fetch(API_BASE + ep.url);
+                const data = await response.json();
+                html += `<div style="margin-bottom: 20px; padding: 10px; background: #2d2d44; border-radius: 8px;">
+                                <strong style="color: #667eea;">📌 ${ep.name}</strong>`;
+                if (ep.url === '/insights/heatmap' && data.heatmap) {
+                    html += formatHeatmapHTML(data);
+                } else if (ep.url === '/gamification/leaderboard' && Array.isArray(data)) {
+                    html += formatLeaderboardHTML(data.slice(0, 5));
+                } else {
+                    html += `<pre style="font-size: 10px; margin-top: 8px;">${JSON.stringify(data, null, 2).substring(0, 500)}${JSON.stringify(data, null, 2).length > 500 ? '...' : ''}</pre>`;
+                }
+                html += `</div>`;
+            }
+
+            html += '</div>';
+            dashboardDiv.innerHTML = html;
+        } catch (error) {
+            dashboardDiv.innerHTML = `<div style="color: #ef4444;">❌ Erreur: ${error.message}</div>`;
+        }
+    }
+
+    function clearDashboard() {
+        document.getElementById('dashboardResult').innerHTML = '<pre>Dashboard effacé. Cliquez sur "Charger Dashboard" pour recharger.</pre>';
+    }
+
+    // Style additionnel
+    const style = document.createElement('style');
+    style.textContent = `
+            pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; font-size: 10px; }
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+            ::-webkit-scrollbar-track { background: #1e1e2f; border-radius: 10px; }
+            ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 10px; }
+        `;
+    document.head.appendChild(style);
+
+    console.log('🎉 Page de test prête ! API Base: ' + API_BASE);
+    console.log('📋 Liste des API disponibles:');
+    console.log('   - Social: /social/recommendations/{id}, /social/influence/{id}, /social/communities, /social/interests/{tag}');
+    console.log('   - Predict: /predict/club/{id}, /predict/churn/{id}, /predict/trends, /predict/ranking, /predict/history/{id}');
+    console.log('   - Gamification: /gamification/leaderboard, /gamification/journey/{id}, /gamification/stats/{id}');
+    console.log('   - Insights: /insights/heatmap, /insights/club/{id}/health, /insights/compare, /insights/interests/top');
+</script>
+</body>
+</html>
