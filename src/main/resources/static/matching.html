@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matching Intelligent - Mentorat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    h1 { color: white; text-align: center; margin-bottom: 20px; }
+    input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+    button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 16px; }
+    button:hover { transform: translateY(-2px); }
+    .result { background: #f8f9fa; border-radius: 10px; padding: 15px; margin-top: 15px; max-height: 500px; overflow: auto; }
+    .match-card { border-left: 4px solid #667eea; margin: 10px 0; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+    .score { font-size: 20px; font-weight: bold; color: #667eea; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin: 2px; }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-info { background: #d1ecf1; color: #0c5460; }
+    .badge-warning { background: #fff3cd; color: #856404; }
+    .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error { color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🎯 Matching Intelligent - Mentorat</h1>
+
+  <div class="card">
+    <h2>👤 ID Membre</h2>
+    <input type="number" id="membreId" placeholder="Entrez l'ID du membre" value="1">
+
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button onclick="findMentors()">👨‍🏫 Trouver un Mentor</button>
+      <button onclick="findMentees()">👨‍🎓 Trouver un Mentoré</button>
+    </div>
+
+    <div id="result" class="result">
+      <p style="color: #888; text-align: center;">Cliquez sur un bouton pour trouver des matches...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8081/api';
+
+  async function findMentors() {
+    const membreId = document.getElementById('membreId').value;
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '<div class="loading"></div> Recherche de mentors...';
+
+    try {
+      const response = await fetch(`${API_BASE}/matching/mentors/${membreId}?limit=5`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Données reçues:', data);
+
+      // Vérifier si data est un tableau
+      if (!Array.isArray(data)) {
+        resultDiv.innerHTML = `<div class="error">❌ Erreur: Les données reçues ne sont pas un tableau. Format attendu: un tableau de matches.</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        resultDiv.innerHTML = '<div class="error">📌 Aucun mentor trouvé. Essayez avec un autre ID ou créez d\'abord des membres avec le rôle PRESIDENT ou VICE_PRESIDENT.</div>';
+        return;
+      }
+
+      let html = '<h3>👨‍🏫 Meilleurs mentors trouvés</h3>';
+
+      data.forEach((match, index) => {
+        const mentor = match.mentor;
+        const score = Math.round(match.matchScore * 100);
+
+        html += `
+                        <div class="match-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong>${index + 1}. ${mentor.nom} ${mentor.prenom}</strong>
+                                <span class="score">${score}%</span>
+                            </div>
+                            <div>
+                                <span class="badge badge-info">${match.matchLevel}</span>
+                                <span class="badge badge-success">Rôle: ${mentor.role}</span>
+                            </div>
+                            <p style="margin-top: 8px;"><strong>Intérêts communs:</strong> ${match.commonInterests?.join(', ') || 'Aucun'}</p>
+                            <p><strong>Compétences du mentor:</strong> ${match.complementarySkills?.join(', ') || 'Aucune'}</p>
+                            <div style="margin-top: 8px;">
+                                <strong>Recommandations:</strong>
+                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                    ${match.recommendations?.map(r => `<li>${r}</li>`).join('') || '<li>Aucune recommandation</li>'}
+                                </ul>
+                            </div>
+                            <details style="margin-top: 8px;">
+                                <summary style="cursor: pointer; color: #667eea;">Détails du score</summary>
+                                <table style="width: 100%; margin-top: 8px; font-size: 12px;">
+                                    ${Object.entries(match.scoreBreakdown || {}).map(([key, value]) => `
+                                        <tr>
+                                            <td>${key}</td>
+                                            <td>${Math.round(value * 100)}%</td>
+                                            <td><div style="width: ${value * 100}px; height: 5px; background: #667eea;"></div></td>
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                            </details>
+                        </div>
+                    `;
+      });
+
+      resultDiv.innerHTML = html;
+    } catch (error) {
+      console.error('Erreur:', error);
+      resultDiv.innerHTML = `<div class="error">❌ Erreur: ${error.message}<br><br>Vérifiez que l'application Spring Boot est lancée sur le port 8081 et que le membre existe.</div>`;
+    }
+  }
+
+  async function findMentees() {
+    const membreId = document.getElementById('membreId').value;
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '<div class="loading"></div> Recherche de mentorés...';
+
+    try {
+      const response = await fetch(`${API_BASE}/matching/mentees/${membreId}?limit=5`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Données reçues:', data);
+
+      if (!Array.isArray(data)) {
+        resultDiv.innerHTML = `<div class="error">❌ Erreur: Les données reçues ne sont pas un tableau.</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        resultDiv.innerHTML = '<div class="error">📌 Aucun mentoré trouvé. Essayez avec un autre ID ou créez d\'abord des membres avec le rôle MEMBRE_SIMPLE.</div>';
+        return;
+      }
+
+      let html = '<h3>👨‍🎓 Meilleurs mentorés trouvés</h3>';
+
+      data.forEach((match, index) => {
+        const mentee = match.mentore;
+        const score = Math.round(match.matchScore * 100);
+
+        html += `
+                        <div class="match-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong>${index + 1}. ${mentee.nom} ${mentee.prenom}</strong>
+                                <span class="score">${score}%</span>
+                            </div>
+                            <div>
+                                <span class="badge badge-info">${match.matchLevel}</span>
+                                <span class="badge badge-warning">Rôle: ${mentee.role}</span>
+                            </div>
+                            <p style="margin-top: 8px;"><strong>Intérêts communs:</strong> ${match.commonInterests?.join(', ') || 'Aucun'}</p>
+                            <p><strong>Compétences à développer:</strong> ${match.complementarySkills?.join(', ') || 'Aucune'}</p>
+                            <div style="margin-top: 8px;">
+                                <strong>Recommandations:</strong>
+                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                    ${match.recommendations?.map(r => `<li>${r}</li>`).join('') || '<li>Aucune recommandation</li>'}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+      });
+
+      resultDiv.innerHTML = html;
+    } catch (error) {
+      console.error('Erreur:', error);
+      resultDiv.innerHTML = `<div class="error">❌ Erreur: ${error.message}</div>`;
+    }
+  }
+</script>
+</body>
+</html>

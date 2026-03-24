@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club Manager - IA Avancée</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { text-align: center; color: white; margin-bottom: 10px; }
+    .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+    .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .card h2 { color: #667eea; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+    input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 8px; }
+    button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px; transition: transform 0.2s; }
+    button:hover { transform: translateY(-2px); }
+    .result { background: #f8f9fa; border-radius: 10px; padding: 15px; margin-top: 15px; max-height: 400px; overflow: auto; font-family: monospace; font-size: 12px; }
+    .chart-container { height: 300px; margin-top: 15px; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; margin: 2px; }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-info { background: #d1ecf1; color: #0c5460; }
+    .match-score { font-size: 24px; font-weight: bold; color: #667eea; }
+    .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🤖 Club Manager - IA Avancée</h1>
+  <div class="subtitle">GPT-like | Graphiques Intelligents | Matching Mentorat</div>
+
+  <div class="grid">
+    <!-- GPT-like Activity Generator -->
+    <div class="card">
+      <h2>🧠 GPT-like - Générateur d'Activités</h2>
+      <input type="number" id="clubIdSuggest" placeholder="ID Club" value="1">
+      <button onclick="generateActivities()">✨ Générer des suggestions d'activités</button>
+      <div id="suggestionsResult" class="result">Cliquez pour générer...</div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="card">
+      <h2>📊 Graphiques Intelligents</h2>
+      <input type="number" id="clubIdCharts" placeholder="ID Club" value="1">
+      <button onclick="loadCharts()">📈 Charger tous les graphiques</button>
+      <div id="chartsContainer"></div>
+    </div>
+
+    <!-- Matching Mentorat -->
+    <div class="card">
+      <h2>🎯 Matching Intelligent - Mentorat</h2>
+      <input type="number" id="membreIdMatch" placeholder="ID Membre" value="1">
+      <button onclick="findMentors()">👨‍🏫 Trouver un Mentor</button>
+      <button onclick="findMentees()">👨‍🎓 Trouver un Mentoré</button>
+      <div id="matchingResult" class="result">Cliquez pour trouver des matches...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8081/api';
+  let charts = {};
+
+  async function generateActivities() {
+    const clubId = document.getElementById('clubIdSuggest').value;
+    const resultDiv = document.getElementById('suggestionsResult');
+    resultDiv.innerHTML = '<div class="loading"></div> Génération en cours...';
+
+    try {
+      const response = await fetch(`${API_BASE}/ai/activities/suggest/${clubId}`);
+      const data = await response.json();
+
+      let html = '<h3>📝 Suggestions d\'activités</h3>';
+      data.forEach(s => {
+        html += `
+                        <div style="border-left: 3px solid #667eea; margin: 10px 0; padding: 10px; background: #f5f5f5;">
+                            <strong>${s.titre}</strong><br>
+                            <span class="badge badge-info">${s.type}</span>
+                            <span class="badge badge-success">Confiance: ${Math.round(s.scoreConfiance * 100)}%</span>
+                            <p style="margin-top: 5px;">${s.description}</p>
+                            <small>📍 ${s.lieuSuggere} | 🕒 ${s.heureSuggeree} | 👥 ${s.participantsEstimes} participants</small>
+                            <p><strong>Raison:</strong> ${s.raison}</p>
+                        </div>
+                    `;
+      });
+      resultDiv.innerHTML = html;
+    } catch (error) {
+      resultDiv.innerHTML = `<div style="color: red;">❌ Erreur: ${error.message}</div>`;
+    }
+  }
+
+  async function loadCharts() {
+    const clubId = document.getElementById('clubIdCharts').value;
+    const container = document.getElementById('chartsContainer');
+    container.innerHTML = '<div class="loading"></div> Chargement des graphiques...';
+
+    try {
+      const response = await fetch(`${API_BASE}/charts/dashboard/${clubId}`);
+      const data = await response.json();
+
+      container.innerHTML = '';
+
+      for (const [key, chartData] of Object.entries(data)) {
+        const canvasId = `chart-${key}`;
+        const div = document.createElement('div');
+        div.className = 'chart-container';
+        div.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+        container.appendChild(div);
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        charts[key] = new Chart(ctx, {
+          type: chartData.type.toLowerCase(),
+          data: {
+            labels: chartData.labels,
+            datasets: chartData.datasets.map(ds => ({
+              label: ds.label,
+              data: ds.data,
+              backgroundColor: ds.backgroundColor,
+              borderColor: ds.borderColor,
+              borderWidth: ds.borderWidth,
+              fill: ds.fill === 'origin'
+            }))
+          },
+          options: chartData.options || { responsive: true, maintainAspectRatio: false }
+        });
+      }
+    } catch (error) {
+      container.innerHTML = `<div style="color: red;">❌ Erreur: ${error.message}</div>`;
+    }
+  }
+
+  async function findMentors() {
+    const membreId = document.getElementById('membreIdMatch').value;
+    const resultDiv = document.getElementById('matchingResult');
+    resultDiv.innerHTML = '<div class="loading"></div> Recherche de mentors...';
+
+    try {
+      const response = await fetch(`${API_BASE}/matching/mentors/${membreId}?limit=3`);
+      const data = await response.json();
+
+      let html = '<h3>👨‍🏫 Meilleurs mentors</h3>';
+      data.forEach(m => {
+        html += `
+                        <div style="border-left: 3px solid #667eea; margin: 10px 0; padding: 10px; background: #f5f5f5;">
+                            <strong>${m.mentor.nom} ${m.mentor.prenom}</strong>
+                            <span class="badge badge-success">Score: ${Math.round(m.matchScore * 100)}%</span>
+                            <span class="badge badge-info">${m.matchLevel}</span>
+                            <p><strong>Intérêts communs:</strong> ${m.commonInterests.join(', ') || 'Aucun'}</p>
+                            <p><strong>Compétences complémentaires:</strong> ${m.complementarySkills.join(', ') || 'Aucune'}</p>
+                            <p><strong>Recommandations:</strong></p>
+                            <ul>${m.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>
+                        </div>
+                    `;
+      });
+      resultDiv.innerHTML = html;
+    } catch (error) {
+      resultDiv.innerHTML = `<div style="color: red;">❌ Erreur: ${error.message}</div>`;
+    }
+  }
+
+  async function findMentees() {
+    const membreId = document.getElementById('membreIdMatch').value;
+    const resultDiv = document.getElementById('matchingResult');
+    resultDiv.innerHTML = '<div class="loading"></div> Recherche de mentorés...';
+
+    try {
+      const response = await fetch(`${API_BASE}/matching/mentees/${membreId}?limit=3`);
+      const data = await response.json();
+
+      let html = '<h3>👨‍🎓 Meilleurs mentorés</h3>';
+      data.forEach(m => {
+        html += `
+                        <div style="border-left: 3px solid #667eea; margin: 10px 0; padding: 10px; background: #f5f5f5;">
+                            <strong>${m.mentore.nom} ${m.mentore.prenom}</strong>
+                            <span class="badge badge-success">Score: ${Math.round(m.matchScore * 100)}%</span>
+                            <span class="badge badge-info">${m.matchLevel}</span>
+                            <p><strong>Intérêts communs:</strong> ${m.commonInterests.join(', ') || 'Aucun'}</p>
+                            <p><strong>Compétences à développer:</strong> ${m.complementarySkills.join(', ') || 'Aucune'}</p>
+                            <p><strong>Recommandations:</strong></p>
+                            <ul>${m.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>
+                        </div>
+                    `;
+      });
+      resultDiv.innerHTML = html;
+    } catch (error) {
+      resultDiv.innerHTML = `<div style="color: red;">❌ Erreur: ${error.message}</div>`;
+    }
+  }
+</script>
+</body>
+</html>
