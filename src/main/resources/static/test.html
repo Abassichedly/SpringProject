@@ -236,7 +236,7 @@
             <h2><span>🌐</span> Réseau Social Intelligent</h2>
             <div class="input-group">
                 <label>ID Membre</label>
-                <input type="number" id="socialMembreId" placeholder="Entrez l'ID du membre" value="1">
+                <input type="number" id="socialMembreId" placeholder="Entrez l'ID du user" value="1">
             </div>
             <div class="btn-group">
                 <button onclick="testAPI('/social/recommendations/' + getSocialId(), 'socialResult')">🤝 Recommandations</button>
@@ -318,7 +318,7 @@
                 <label>Sélectionner une API</label>
                 <select id="baseApiSelect">
                     <option value="/club/listClub">📋 Liste des clubs</option>
-                    <option value="/membre/listMembre">👥 Liste des membres</option>
+                    <option value="/user/listMembre">👥 Liste des users</option>
                     <option value="/activite/listActivite">🎪 Liste des activités</option>
                     <option value="/event/listEvent">🎉 Liste des événements</option>
                     <option value="/participation/listParticipation">✅ Liste des participations</option>
@@ -330,7 +330,7 @@
             <div id="baseResult" class="result">
                 <pre>Cliquez pour tester...</pre>
             </div>
-            <div class="api-url">GET /club/listClub | /membre/listMembre | /activite/listActivite | /event/listEvent | /participation/listParticipation</div>
+            <div class="api-url">GET /club/listClub | /user/listMembre | /activite/listActivite | /event/listEvent | /participation/listParticipation</div>
         </div>
 
         <!-- 6. Dashboard Complet -->
@@ -425,7 +425,7 @@
             const rankColor = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'inherit';
             html += `<tr style="border-bottom: 1px solid #333;">
                             <td style="padding: 6px; color: ${rankColor}; font-weight: bold;">${index + 1}${index === 0 ? ' 👑' : ''}</td>
-                            <td style="padding: 6px;">${item.membre || 'N/A'}</td>
+                            <td style="padding: 6px;">${item.user || 'N/A'}</td>
                             <td style="padding: 6px;"><strong>${item.xp || 0}</strong></td>
                             <td style="padding: 6px;">${item.level || 1}</td>
                             <td style="padding: 6px;">${badgesHtml}</td>
@@ -469,7 +469,7 @@
         html += `<div style="font-size: 18px; margin-bottom: 10px;">${data.icon || '🏥'} <strong>${data.club}</strong></div>`;
         html += `<div style="margin: 8px 0;"><span class="badge ${data.healthStatus === 'EXCELLENTE' ? 'badge-success' : data.healthStatus === 'BONNE' ? 'badge-info' : 'badge-warning'}">${data.healthStatus}</span></div>`;
         html += `<div style="margin: 10px 0;"><strong>📊 Statistiques:</strong></div>`;
-        html += `<table style="width:100%;"><tr><td>👥 Membres</td><td><strong>${data.membres}</strong></td></tr>`;
+        html += `<table style="width:100%;"><tr><td>👥 Membres</td><td><strong>${data.users}</strong></td></tr>`;
         html += `<tr><td>🎪 Activités</td><td><strong>${data.activites}</strong></td></tr>`;
         html += `<tr><td>🎉 Événements</td><td><strong>${data.events}</strong></td></tr>`;
         html += `<tr><td>📈 Taux d'engagement</td><td><strong>${data.engagementRate}</strong></td></tr></table>`;
