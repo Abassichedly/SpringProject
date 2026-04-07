@@ -2,7 +2,6 @@ package tn.esprit.spring.ARMP.controller;
 
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.spring.ARMP.entity.User;
 import tn.esprit.spring.ARMP.enums.UserRole;
@@ -24,6 +23,11 @@ public class UserController {
         return userService.retrieveAllUsers();
     }
 
+    @GetMapping("/getbyid/{userId}")
+    public User retrieveUser(@PathVariable String userId) {
+        return userService.retrieveUser(userId);
+    }
+
     @PostMapping("/add")
     public User addUser(@RequestBody User user) {
         return userService.addUser(user);
@@ -32,11 +36,6 @@ public class UserController {
     @PutMapping("/update")
     public User updateUser(@RequestBody User user) {
         return userService.updateUser(user);
-    }
-
-    @GetMapping("/getbyid/{userId}")
-    public User retrieveUser(@PathVariable String userId) {
-        return userService.retrieveUser(userId);
     }
 
     @DeleteMapping("/delete/{userId}")

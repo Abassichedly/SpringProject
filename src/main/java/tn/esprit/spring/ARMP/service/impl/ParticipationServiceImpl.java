@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.spring.ARMP.entity.Activite;
 import tn.esprit.spring.ARMP.entity.Event;
 import tn.esprit.spring.ARMP.entity.User;
@@ -17,6 +18,7 @@ import tn.esprit.spring.ARMP.service.interfaces.IParticipationService;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -30,68 +32,100 @@ public class ParticipationServiceImpl implements IParticipationService {
 
     @Override
     public List<Participation> retrieveAllParticipations() {
-        return participationRepository.findAll();
+        List<Participation> participations = participationRepository.findAll();
+
+        // Load all related data
+        for (Participation p : participations) {
+            loadRelatedData(p);
+        }
+
+        return participations;
     }
 
     @Override
+    @Transactional
     public Participation addParticipation(Participation participation) {
+        // Extract and set user ID
+        if (participation.getUser() != null && participation.getUser().getId() != null) {
+            String userId = participation.getUser().getId();
+            participation.setUserId(userId);
+        }
 
-        // 1. VÉRIFIER ET RÉCUPÉRER L'UTILISATEUR
-        if (participation.getUser() == null || participation.getUser().getId() == null) {
+        if (participation.getUserId() == null) {
             throw new RuntimeException("L'utilisateur est requis");
         }
 
-        String userId = participation.getUser().getId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec ID: " + userId));
-        participation.setUser(user);
-
-        // 2. VÉRIFIER SI C'EST UNE PARTICIPATION À UNE ACTIVITÉ
+        // Handle activity
         if (participation.getActivite() != null && participation.getActivite().getIdActivite() != null) {
             Long activiteId = participation.getActivite().getIdActivite();
-            Activite activite = activiteRepository.findById(activiteId)
-                    .orElseThrow(() -> new RuntimeException("Activité non trouvée avec ID: " + activiteId));
+            Activite activite = activiteRepository.findById(activiteId).orElse(null);
             participation.setActivite(activite);
             participation.setEvent(null);
         }
-        // 3. VÉRIFIER SI C'EST UNE PARTICIPATION À UN ÉVÉNEMENT
+        // Handle event
         else if (participation.getEvent() != null && participation.getEvent().getIdEvent() != null) {
             Long eventId = participation.getEvent().getIdEvent();
-            Event event = eventRepository.findById(eventId)
-                    .orElseThrow(() -> new RuntimeException("Événement non trouvé avec ID: " + eventId));
+            Event event = eventRepository.findById(eventId).orElse(null);
             participation.setEvent(event);
             participation.setActivite(null);
         }
-        // 4. AUCUNE ACTIVITÉ NI ÉVÉNEMENT SPÉCIFIÉ
-        else {
-            throw new RuntimeException("Soit une activité (idActivite), soit un événement (idEvent) est requis");
+
+        // Set defaults
+        if (participation.getDateInscription() == null) {
+            participation.setDateInscription(LocalDate.now());
         }
-
-        // 5. DÉFINIR LA DATE D'INSCRIPTION
-        participation.setDateInscription(LocalDate.now());
-
-        // 6. DÉFINIR LE STATUT PAR DÉFAUT SI NÉCESSAIRE
         if (participation.getStatutPresence() == null) {
             participation.setStatutPresence(StatutPresence.INSCRIT);
         }
+        if (participation.getRole() == null) {
+            participation.setRole("PARTICIPANT");
+        }
 
-        // 7. SAUVEGARDER
-        return participationRepository.save(participation);
+        Participation saved = participationRepository.save(participation);
+        loadRelatedData(saved);
+
+        return saved;
     }
 
     @Override
     public Participation updateParticipation(Participation participation) {
-        return participationRepository.save(participation);
+        Participation updated = participationRepository.save(participation);
+        loadRelatedData(updated);
+        return updated;
     }
 
     @Override
     public Participation retrieveParticipation(Long id) {
-        return participationRepository.findById(id).orElse(null);
+        Participation p = participationRepository.findById(id).orElse(null);
+        if (p != null) {
+            loadRelatedData(p);
+        }
+        return p;
     }
 
     @Override
     public void removeParticipation(Long id) {
         participationRepository.deleteById(id);
+    }
+
+    private void loadRelatedData(Participation p) {
+        // Load user
+        if (p.getUserId() != null) {
+            User user = userRepository.findById(p.getUserId()).orElse(null);
+            p.setUser(user);
+        }
+
+        // Load activity
+        if (p.getActivite() != null && p.getActivite().getIdActivite() != null) {
+            Activite activite = activiteRepository.findById(p.getActivite().getIdActivite()).orElse(null);
+            p.setActivite(activite);
+        }
+
+        // Load event
+        if (p.getEvent() != null && p.getEvent().getIdEvent() != null) {
+            Event event = eventRepository.findById(p.getEvent().getIdEvent()).orElse(null);
+            p.setEvent(event);
+        }
     }
 
     @Override
@@ -101,9 +135,6 @@ public class ParticipationServiceImpl implements IParticipationService {
 
     @Override
     public List<Participation> findByMembreId(Long membreId) {
-        // Convertir Long en String pour chercher l'utilisateur par ID
-        // Note: Si l'ID utilisateur est de type String, il faut adapter
-        // Ici on suppose que l'ID utilisateur est passé en String
         return participationRepository.findByUserId(String.valueOf(membreId));
     }
 

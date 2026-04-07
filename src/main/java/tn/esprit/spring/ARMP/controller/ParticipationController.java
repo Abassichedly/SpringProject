@@ -2,13 +2,21 @@ package tn.esprit.spring.ARMP.controller;
 
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tn.esprit.spring.ARMP.entity.Activite;
+import tn.esprit.spring.ARMP.entity.Event;
 import tn.esprit.spring.ARMP.entity.Participation;
+import tn.esprit.spring.ARMP.entity.User;
 import tn.esprit.spring.ARMP.enums.StatutPresence;
+import tn.esprit.spring.ARMP.repository.UserRepository;
 import tn.esprit.spring.ARMP.service.interfaces.IParticipationService;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @AllArgsConstructor
@@ -16,6 +24,7 @@ import java.util.List;
 public class ParticipationController {
 
     IParticipationService participationService;
+    UserRepository userRepository;
 
     @GetMapping("/listParticipation")
     public List<Participation> retrieveAllParticipations() {
@@ -23,8 +32,66 @@ public class ParticipationController {
     }
 
     @PostMapping("/add")
-    public Participation addParticipation(@RequestBody Participation participation) {
-        return participationService.addParticipation(participation);
+    public ResponseEntity<?> addParticipation(@RequestBody Map<String, Object> payload) {
+        try {
+            System.out.println("=== RAW PAYLOAD ===");
+            System.out.println(payload);
+
+            Participation participation = new Participation();
+
+            // Extract user
+            Map<String, String> userMap = (Map<String, String>) payload.get("user");
+            if (userMap != null && userMap.get("id") != null) {
+                String userId = userMap.get("id");
+                participation.setUserId(userId);
+                User user = userRepository.findById(userId).orElse(null);
+                participation.setUser(user);
+            }
+
+            // Extract activity
+            if (payload.containsKey("activite")) {
+                Map<String, Object> activiteMap = (Map<String, Object>) payload.get("activite");
+                if (activiteMap != null && activiteMap.get("idActivite") != null) {
+                    Long activiteId = ((Number) activiteMap.get("idActivite")).longValue();
+                    Activite activite = new Activite();
+                    activite.setIdActivite(activiteId);
+                    participation.setActivite(activite);
+                }
+            }
+
+            // Extract event
+            if (payload.containsKey("event")) {
+                Map<String, Object> eventMap = (Map<String, Object>) payload.get("event");
+                if (eventMap != null && eventMap.get("idEvent") != null) {
+                    Long eventId = ((Number) eventMap.get("idEvent")).longValue();
+                    Event event = new Event();
+                    event.setIdEvent(eventId);
+                    participation.setEvent(event);
+                }
+            }
+
+            // Extract other fields
+            if (payload.containsKey("statutPresence")) {
+                participation.setStatutPresence(StatutPresence.valueOf(payload.get("statutPresence").toString()));
+            }
+
+            if (payload.containsKey("role")) {
+                participation.setRole(payload.get("role").toString());
+            }
+
+            if (payload.containsKey("dateInscription")) {
+                participation.setDateInscription(LocalDate.parse(payload.get("dateInscription").toString()));
+            }
+
+            Participation saved = participationService.addParticipation(participation);
+            return ResponseEntity.ok(saved);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 
     @PutMapping("/update")
