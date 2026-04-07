@@ -184,4 +184,6 @@ public class ParticipationServiceImpl implements IParticipationService {
     public long countPresencesByEventId(Long eventId) {
         return participationRepository.countPresencesByEventId(eventId);
     }
+
+
 }
